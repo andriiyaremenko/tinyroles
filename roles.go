@@ -2,15 +2,17 @@ package tinyroles
 
 import "sync"
 
+// Role type
 type Role string
 
+// Roles manager. Use it to assign, withdraw and check permissions
 type Roles struct {
 	mu    sync.RWMutex
 	roles map[Role]uint64
 }
 
-// Checks if Role has a Permission
-// Returns `false` for Role without assigned permissions
+// Checks if a `role` has a `permission`
+// Returns `false` for `role` without assigned permissions
 func (rf *Roles) HasPermission(role Role, permission Permission) bool {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
@@ -20,7 +22,8 @@ func (rf *Roles) HasPermission(role Role, permission Permission) bool {
 	return ok && ((rv & permission.Value()) == permission.Value())
 }
 
-// Assigns set of Permissions to a Role
+// Assigns set of `permissions` to a `role`
+// It is idempotent - subsequent calls with already assigned roles will take no effect
 func (rf *Roles) AssignPermissions(role Role, permissions ...Permission) {
 	var v uint64 = 0
 	for _, p := range permissions {
@@ -46,15 +49,35 @@ func (rf *Roles) AssignPermissions(role Role, permissions ...Permission) {
 	rf.mu.Unlock()
 }
 
-// Withdraws set of Permissions from a Role
+// Withdraws set of `permissions` from a `role`
+// It takes into account only assigned `permissions`
+// Permissions that was not assigned to this `role` would be ignored
 func (rf *Roles) WithdrawPermissions(role Role, permissions ...Permission) {
-	for _, p := range permissions {
-		if rf.HasPermission(role, p) {
-			rf.mu.Lock()
+	rf.mu.RLock()
 
-			rf.roles[role] = rf.roles[role] ^ p.Value()
+	if _, ok := rf.roles[role]; !ok {
+		rf.mu.RUnlock()
 
-			rf.mu.Unlock()
-		}
+		return
 	}
+
+	rf.mu.RUnlock()
+
+	rf.mu.Lock()
+	for _, p := range permissions {
+		rf.roles[role] = rf.roles[role] &^ p.Value()
+	}
+	rf.mu.Unlock()
+}
+
+// Returns value of a `role`
+func (rf *Roles) GetRoleValue(role Role) uint64 {
+	rf.mu.RLock()
+	defer rf.mu.RUnlock()
+
+	if rv, ok := rf.roles[role]; ok {
+		return rv
+	}
+
+	return 0
 }
