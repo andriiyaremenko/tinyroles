@@ -46,7 +46,7 @@ func main() {
 }
 ````
 
-## Assign a Permissions to a Role
+## Assign Permissions to a Role
 ````go
 package main
 
