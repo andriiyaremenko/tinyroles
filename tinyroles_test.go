@@ -22,7 +22,23 @@ const (
 	Role2 Role = "Role2"
 )
 
-func TestHasPermissionsWorks(t *testing.T) {
+func TestRoles(t *testing.T) {
+	t.Run("HasPermission returns true for assigned permissions and false for unassigned",
+		testHasPermissionsWorks)
+	t.Run("HasPermission always returns false for role without any permissions",
+		testHasPermissionReturnsFalseForRoleWithoutPermissions)
+	t.Run("HasPermission is safe to call from different gorutines simultaneously",
+		testHasPermissionWorksWithoutRace)
+	t.Run("AssignPermissions is idempotent", testAssignPermissionsIsIdempotent)
+	t.Run("AssignPermission can be used subsequently", testAssignPermissionsInSubsequentCalls)
+	t.Run("WithdrawPermissions withdraws only listed permissions from a role",
+		testWithdrawPermissionsWorks)
+	t.Run("WithdrawPermissions is safe to call with permissions not assigned to a role previously",
+		testWithdrawPermissionsIsSafeToCallWithWrongPermissions)
+	t.Run("GetRoleValue returns correct numeric representation of the Role", testGetRoleValueWorks)
+}
+
+func testHasPermissionsWorks(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 	roles.AssignPermissions(Role1, permission0, permission2, permission4, permission6)
@@ -49,7 +65,7 @@ func TestHasPermissionsWorks(t *testing.T) {
 	assert.False(roles.HasPermission(Role1, permission7))
 }
 
-func TestAssignPermissionsIsIdempotent(t *testing.T) {
+func testAssignPermissionsIsIdempotent(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 	roles.AssignPermissions(Role1, permission0, permission2, permission4)
@@ -58,7 +74,7 @@ func TestAssignPermissionsIsIdempotent(t *testing.T) {
 	assert.Equal(roles.GetRoleValue(Role1), roles.GetRoleValue(Role2))
 }
 
-func TestGetRoleValueWorks(t *testing.T) {
+func testGetRoleValueWorks(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 	roles.AssignPermissions(Role1, permission0, permission2, permission4, permission6)
@@ -71,7 +87,7 @@ func TestGetRoleValueWorks(t *testing.T) {
 	assert.Equal(expected, roles.GetRoleValue(Role1))
 }
 
-func TestHasPermissionReturnsFalseForRoleWithoutPermissions(t *testing.T) {
+func testHasPermissionReturnsFalseForRoleWithoutPermissions(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 
@@ -96,7 +112,7 @@ func TestHasPermissionReturnsFalseForRoleWithoutPermissions(t *testing.T) {
 	assert.False(roles.HasPermission(Role1, permission7))
 }
 
-func TestAssignPermissionsInSubsequentCalls(t *testing.T) {
+func testAssignPermissionsInSubsequentCalls(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 
@@ -128,7 +144,7 @@ func TestAssignPermissionsInSubsequentCalls(t *testing.T) {
 	assert.False(roles.HasPermission(Role1, permission7))
 }
 
-func TestWithdrawPermissionsWorks(t *testing.T) {
+func testWithdrawPermissionsWorks(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 
@@ -158,7 +174,7 @@ func TestWithdrawPermissionsWorks(t *testing.T) {
 	assert.False(roles.HasPermission(Role1, permission7))
 }
 
-func TestWithdrawPermissionsIsSafeToCallWithWrongPermissions(t *testing.T) {
+func testWithdrawPermissionsIsSafeToCallWithWrongPermissions(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 
@@ -180,7 +196,7 @@ func TestWithdrawPermissionsIsSafeToCallWithWrongPermissions(t *testing.T) {
 	assert.Equal(expected, roles.GetRoleValue(Role1))
 }
 
-func TestHasPermissionWorksWithoutRace(t *testing.T) {
+func testHasPermissionWorksWithoutRace(t *testing.T) {
 	assert := assert.New(t)
 	roles := new(Roles)
 	roles.AssignPermissions(Role1, permission0, permission2, permission4, permission6)
